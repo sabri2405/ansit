@@ -23,6 +23,7 @@ ROOT = Path(__file__).parent
 QUEUE = ROOT / "content" / "queue.json"
 STATE = ROOT / "content" / "state.json"
 BACKGROUNDS = ROOT / "content" / "backgrounds.json"
+CAPTIONS = ROOT / "content" / "captions.json"
 DOWNLOADS = ROOT / "downloads"
 OUT = ROOT / "out"
 VIDEO = ROOT / "video"
@@ -31,7 +32,6 @@ CLIP = VIDEO / "public" / "clip"
 RECITER = 259
 RECITER_NAME = "أحمد النفيس"
 AUDIO_BASE = "https://cdn.mp3quran.net/audio/ahmad-nufais/r1/"
-HASHTAGS = "#قرآن #تلاوة #القرآن_الكريم #تلاوات_خاشعة #أنصت"
 AR_DIGITS = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
 
 TRANSLATION = 20  # Saheeh International on Quran.com
@@ -86,9 +86,14 @@ def download(url, dest):
 def caption(item, surah_name):
     first, last = (str(item[k]).translate(AR_DIGITS) for k in ("from", "to"))
     ayat = f"الآية {first}" if first == last else f"الآيات {first} - {last}"
-    return (f"سورة {surah_name} | {ayat}\n"
+    day = load(STATE)["next"]
+    texts = load(CAPTIONS)
+    line = texts["lines"][day % len(texts["lines"])]
+    tags = " ".join(texts["fixed_tags"] + texts["rotating_tags"][day % len(texts["rotating_tags"])])
+    return (f"{line}\n\n"
+            f"سورة {surah_name} | {ayat}\n"
             f"بصوت الشيخ {RECITER_NAME}\n\n"
-            f"أنصِت.. لعلّك تُرحم\n\n{HASHTAGS}\n")
+            f"{tags}\n")
 
 
 def fetch_translations(surah, first, last):
