@@ -1,0 +1,26 @@
+name: Collect inspiration links
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Save links sent to the bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 collect_links.py
+      - name: Commit new links
+        run: |
+          git config user.name "ansit-bot"
+          git config user.email "ansit-bot@users.noreply.github.com"
+          git add content/inspiration.txt content/telegram_offset.txt 2>/dev/null || true
+          git diff --cached --quiet || { git commit -m "Save inspiration links" && git pull --rebase && git push; }

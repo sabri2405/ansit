@@ -3,6 +3,8 @@ downloads/
 out/
 __pycache__/
 ansit-brand.html
-fonts/AmiriQuran-Regular.ttf
-fonts/ReemKufi*
-fonts/IBMPlexSansArabic-Regular.ttf
+video/public/fonts/AmiriQuran-Regular.ttf
+video/public/fonts/ReemKufi*
+video/public/fonts/IBMPlexSansArabic-Regular.ttf
+node_modules/
+video/public/clip/
