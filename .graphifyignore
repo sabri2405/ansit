@@ -1,0 +1,5 @@
+video/public/
+video/node_modules/
+out/
+downloads/
+page/
