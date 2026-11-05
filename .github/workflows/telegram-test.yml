@@ -1,0 +1,21 @@
+name: Telegram test
+
+on:
+  push:
+    branches: [main]
+    paths: [content/telegram-test.txt]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Send a test message and report the result as an annotation
+        env:
+          BOT: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          reply=$(curl -sS -F chat_id="$CHAT" -F text="اختبار الربط من GitHub" "https://api.telegram.org/bot$BOT/sendMessage" || true)
+          result=$(echo "$reply" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('ok'), d.get('error_code'), d.get('description'))" || echo "no reply")
+          # Lengths only, so a badly pasted value can be spotted without revealing it
+          echo "::warning::Telegram $result | token length ${#BOT} | chat length ${#CHAT}"
