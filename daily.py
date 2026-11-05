@@ -133,16 +133,24 @@ def split_verse(text, start, end, levels):
     return phrases
 
 
-def extract_scene(key):
+def pick_clip(theme, position):
+    """Walk through a theme's clips day by day, so a scene comes back only after the whole theme has shown."""
+    clips = load(BACKGROUNDS)[theme]
+    return clips[(load(STATE)["next"] * 3 + position) % len(clips)]
+
+
+def extract_scene(theme, position):
     """Remotion's video reader failed on repeated seeks, so footage goes in as numbered images."""
+    clip = pick_clip(theme, position)
+    key = f"{theme}-{clip['id']}"
     frames = CLIP / "bg" / key
     if not frames.exists():
-        bg = download(load(BACKGROUNDS)[key], DOWNLOADS / f"{key}.mp4")
+        bg = download(clip["url"], DOWNLOADS / f"{key}.mp4")
         frames.mkdir(parents=True)
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(bg), "-an", "-vf",
                         "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30",
                         "-q:v", "3", str(frames / "%04d.jpg")], check=True)
-    return len(list(frames.glob("*.jpg")))
+    return key, len(list(frames.glob("*.jpg")))
 
 
 def prepare(item):
@@ -173,9 +181,11 @@ def prepare(item):
                 phrase["translation"] = english[i]
             phrases.append(phrase)
 
-    scenes = [{"key": sc["bg"], "frames": extract_scene(sc["bg"]),
-               "start": 0 if sc["from"] == item["from"] else round(timings[sc["from"] - item["from"]][0] - clip_start, 3)}
-              for sc in item["scenes"]]
+    scenes = []
+    for position, sc in enumerate(item["scenes"]):
+        key, frames = extract_scene(sc["bg"], position)
+        start = 0 if sc["from"] == item["from"] else round(timings[sc["from"] - item["from"]][0] - clip_start, 3)
+        scenes.append({"key": key, "frames": frames, "start": start})
 
     props = {
         "reciter": RECITER_NAME,
