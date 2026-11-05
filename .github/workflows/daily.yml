@@ -44,7 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="clip-${{ github.run_id }}"
+          tag="clip-${{ github.run_id }}-${{ github.run_attempt }}"
           gh release create "$tag" out/today.mp4 out/today.txt --title "$tag" --notes "Daily clip" --prerelease
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Send the clip to Telegram for review
