@@ -3,6 +3,9 @@ name: Daily clip
 on:
   schedule:
     - cron: "7 11 * * *"  # 14:07 Mecca time, leaving the afternoon to review before the 20:00 post
+  push:
+    branches: [main]
+    paths: [content/run-now.txt]  # a commit to this file starts a run without opening GitHub
   workflow_dispatch:
     inputs:
       publish_now:
