@@ -1,0 +1,8 @@
+.env
+downloads/
+out/
+__pycache__/
+ansit-brand.html
+fonts/AmiriQuran-Regular.ttf
+fonts/ReemKufi*
+fonts/IBMPlexSansArabic-Regular.ttf
