@@ -54,10 +54,12 @@ jobs:
         run: |
           if [ -z "$BOT" ]; then echo "Telegram is not set up, skipping"; exit 0; fi
           link="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          curl -sSf -o /dev/null -F chat_id="$CHAT" -F video=@out/today_preview.mp4 \
+          curl -sS -o reply.json -F chat_id="$CHAT" -F video=@out/today_preview.mp4 \
             -F caption="$(cat out/today.txt)
 
-          للموافقة على النشر: $link" "https://api.telegram.org/bot$BOT/sendVideo"
+          للموافقة على النشر: $link" "https://api.telegram.org/bot$BOT/sendVideo" || true
+          # A failed review message must not stop the run; the clip can still be watched from the release
+          python3 -c "import json; d = json.load(open('reply.json')); print('Telegram:', d.get('ok'), d.get('error_code'), d.get('description'))" || true
 
   publish:
     needs: build
