@@ -34,12 +34,12 @@ const PARCH = '#F2E8D4';
 
 const VERSE_FONT = 'Scheherazade New';
 const UI_FONT = 'El Messiri';
-const BRAND_FONT = 'Aref Ruqaa';
+const BRAND_FONT = VERSE_FONT;
 const VERSE_SIZE = 84;
 
 loadFont({family: VERSE_FONT, url: staticFile('fonts/ScheherazadeNew-Regular.ttf'), weight: '400'});
 loadFont({family: UI_FONT, url: staticFile('fonts/ElMessiri[wght].ttf'), weight: '400 700'});
-loadFont({family: BRAND_FONT, url: staticFile('fonts/ArefRuqaa-Bold.ttf'), weight: '700'});
+loadFont({family: VERSE_FONT, url: staticFile('fonts/ScheherazadeNew-Bold.ttf'), weight: '700'});
 
 const CROSSFADE = FPS; // frames
 
@@ -275,7 +275,7 @@ const PhraseCard: React.FC<{phrase: Phrase; look: Look}> = ({phrase, look}) => {
 
 const Brand: React.FC = () => (
   <div style={{position: 'absolute', top: 168, left: 0, right: 0, textAlign: 'center', direction: 'rtl'}}>
-    <span style={{fontFamily: BRAND_FONT, fontWeight: 700, fontSize: 46, color: BRASS, textShadow: `0 0 12px ${NIGHT}`}}>
+    <span style={{fontFamily: BRAND_FONT, fontWeight: 700, fontSize: 54, color: BRASS, textShadow: `0 0 12px ${NIGHT}`}}>
       أنصِت
     </span>
   </div>
