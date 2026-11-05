@@ -2,7 +2,7 @@ name: Daily clip
 
 on:
   schedule:
-    - cron: "17 12 * * *"  # 15:17 Mecca time, leaving the afternoon to review before the 20:00 post
+    - cron: "7 11 * * *"  # 14:07 Mecca time, leaving the afternoon to review before the 20:00 post
   workflow_dispatch:
     inputs:
       publish_now:
@@ -61,13 +61,12 @@ jobs:
           # A failed review message must not stop the run; the clip can still be watched from the release
           python3 -c "import json; d = json.load(open('reply.json')); print('Telegram:', d.get('ok'), d.get('error_code'), d.get('description'))" || true
 
-  publish:
+  approve:
     needs: build
     runs-on: ubuntu-24.04
     environment: instagram  # required reviewer: the run waits here for approval
     steps:
-      - uses: actions/checkout@v4
-      - name: Hold the post for its time slot
+      - name: Wait towards the time slot
         env:
           PUBLISH_NOW: ${{ inputs.publish_now }}
           TZ: Asia/Riyadh
@@ -80,8 +79,22 @@ jobs:
             exit 0
           fi
           wait=$((post - now))
-          # A job can run for six hours at most
-          if [ "$wait" -gt 19800 ]; then echo "Approved too early to wait for 20:00"; exit 1; fi
+          # A job can run for six hours at most, so the publish job waits out whatever is left
+          if [ "$wait" -gt 19800 ]; then wait=19800; fi
+          if [ "$wait" -gt 0 ]; then echo "Waiting $wait seconds"; sleep "$wait"; fi
+
+  publish:
+    needs: [build, approve]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hold the post for its time slot
+        env:
+          PUBLISH_NOW: ${{ inputs.publish_now }}
+          TZ: Asia/Riyadh
+        run: |
+          if [ "$PUBLISH_NOW" = "true" ]; then exit 0; fi
+          wait=$(($(date -d "20:00" +%s) - $(date +%s)))
           if [ "$wait" -gt 0 ]; then echo "Waiting $wait seconds for 20:00"; sleep "$wait"; fi
       - name: Publish to Instagram
         env:
