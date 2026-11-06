@@ -11,7 +11,7 @@ Daily Quran clips for Instagram `@ansit.quran`, built and posted by GitHub Actio
 - Edit clips with Remotion (`video/src`). ffmpeg only prepares audio and frames.
 
 ## Flow
-`daily.yml` runs at 14:07 Mecca: `daily.py build` renders the next item in `content/queue.json`, the clip goes to a GitHub release and to the Telegram bot, the `instagram` environment waits for approval, then it posts at 20:00 Mecca (allowed 13:00 to 22:00).
+`daily.yml` is scheduled hourly from 09:07 to 14:07 Mecca because GitHub delays and drops scheduled runs; its `gate` job lets one through each day. `daily.py build` renders the next item in `content/queue.json`, the clip goes to a GitHub release and to the Telegram bot, the `instagram` environment waits for approval, then it posts at 20:00 Mecca (allowed 13:00 to 22:00).
 
 A commit changing `content/run-now.txt` on `main` starts a run. `content/telegram-test.txt` tests Telegram.
 

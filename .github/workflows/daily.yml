@@ -2,7 +2,10 @@ name: Daily clip
 
 on:
   schedule:
-    - cron: "7 11 * * *"  # 14:07 Mecca time, leaving the afternoon to review before the 20:00 post
+    # GitHub starts scheduled runs late and sometimes drops them, so one time a day is not enough.
+    # Hourly from 09:07 to 14:07 Mecca time. The gate job lets one through each day.
+    # Not earlier: an approved run can only wait about 11 hours for the 20:00 post.
+    - cron: "7 6-11 * * *"
   push:
     branches: [main]
     paths: [content/run-now.txt]  # a commit to this file starts a run without opening GitHub
@@ -13,17 +16,45 @@ on:
         type: boolean
         default: false
 
-# A new day's run replaces one that was never approved
-concurrency:
-  group: daily-clip
-  cancel-in-progress: true
-
 permissions:
   contents: write
 
 jobs:
-  build:
+  # Concurrency sits on the later jobs, not on the workflow, so a run the gate
+  # turns away cannot cancel the day's clip while it waits for approval
+  gate:
     runs-on: ubuntu-24.04
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      - name: Let one scheduled run through each day
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          TZ: Asia/Riyadh
+        run: |
+          go=true
+          if [ "$EVENT" = "schedule" ]; then
+            export SINCE=$(date -u -d "@$(date -d "00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
+            built=$(gh api "repos/$REPO/releases?per_page=30"               --jq '[.[] | select((.tag_name | startswith("clip-")) and .published_at >= env.SINCE)] | length')
+            posted=$(gh api -X GET "repos/$REPO/commits" -f path=content/state.json -f since="$SINCE"               --jq '[.[] | select(.commit.message | startswith("Published"))] | length')
+            echo "Since $SINCE: $built clips built, $posted posted"
+            if [ "$built" -gt 0 ] || [ "$posted" -gt 0 ]; then go=false; fi
+            # Too late to review and post before 22:00
+            if [ "$(date +%-H)" -ge 21 ]; then go=false; fi
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
+    runs-on: ubuntu-24.04
+    # A new day's run replaces one that was never approved
+    concurrency:
+      group: ${{ needs.gate.outputs.go == 'true' && 'daily-clip' || format('skipped-{0}', github.run_id) }}
+      cancel-in-progress: true
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -65,8 +96,11 @@ jobs:
           python3 -c "import json; d = json.load(open('reply.json')); print('Telegram:', d.get('ok'), d.get('error_code'), d.get('description'))" || true
 
   approve:
-    needs: build
+    needs: [gate, build]
     runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ needs.gate.outputs.go == 'true' && 'daily-clip' || format('skipped-{0}', github.run_id) }}
+      cancel-in-progress: true
     environment: instagram  # required reviewer: the run waits here for approval
     steps:
       - name: Wait towards the time slot
@@ -87,8 +121,11 @@ jobs:
           if [ "$wait" -gt 0 ]; then echo "Waiting $wait seconds"; sleep "$wait"; fi
 
   publish:
-    needs: [build, approve]
+    needs: [gate, build, approve]
     runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ needs.gate.outputs.go == 'true' && 'daily-clip' || format('skipped-{0}', github.run_id) }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - name: Hold the post for its time slot
